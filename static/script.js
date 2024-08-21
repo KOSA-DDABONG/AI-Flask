@@ -27,7 +27,7 @@ function addBotMessage(message) {
 }
 
 function sendToServer(message) {
-    fetch('/find_keywords', {
+    fetch('/making', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json'
