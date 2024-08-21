@@ -4,6 +4,7 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
+import pymysql
 
 
 load_dotenv()
