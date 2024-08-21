@@ -1,9 +1,11 @@
 from flask import Flask, request, jsonify, render_template
+from flask_cors import CORS
 import gptlogic
 
 app = Flask(__name__)
 
-# LangGraph Session 초기화
+# CORS 설정
+CORS(app)  # 모든 출처의 요청을 허용
 
 this_state = gptlogic.input_text()
 
