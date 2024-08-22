@@ -4,7 +4,6 @@ from dotenv import load_dotenv
 from sqlalchemy import create_engine
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
-import pymysql
 
 
 load_dotenv()
@@ -81,6 +80,7 @@ def input_text():
         'scheduler': "",
         'explain': "",
         'second_sentence': "",
+        'user_age': "",
         'api_key': os.getenv("OPENAI_API_KEY")
     }
     
@@ -154,8 +154,7 @@ def find_keywords(state):
     return keywords, extracted_keywords['response']
 
 def foods_search(state):
-    #user 나이 반환 미구현
-    user_age = 29
+    user_age = int(state['user_age'])
     data = get_db('food')
 
     if state['foods_context'] is None:
@@ -220,8 +219,7 @@ def foods_search(state):
 
 def hotels_search(state):
 
-    #나이 반환 미구현
-    user_age = 29
+    user_age = int(state['user_age'])
     data = get_db('hotel')
 
     if state['hotel_context'] is None:
@@ -277,8 +275,7 @@ def hotels_search(state):
 
 def places_search(state):
     
-    #data 조회함수 -> hotels.csv 및 user의 나이까지 반환해야함.
-    user_age = 29
+    user_age = int(state['user_age'])
     data = get_db('place')
 
     if state['playing_context'] is None:
