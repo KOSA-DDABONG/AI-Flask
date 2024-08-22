@@ -8,6 +8,35 @@ from langchain_openai import ChatOpenAI
 
 load_dotenv()
 
+class UserState:
+    def __init__(self):
+        # 초기 상태 설정
+        self.state = {
+            'model': ChatOpenAI(temperature=0.3, model="gpt-4o-mini"),
+            'question': None,
+            'keywords': {
+                'days': None,
+                'transport': None,
+                'companion': None,
+                'theme': None,
+                'food': None
+            },
+            'foods_context': [],
+            'playing_context': [],
+            'hotel_context': [],
+            'scheduler': "",
+            'explain': "",
+            'second_sentence': "",
+            'user_age': "",
+            'user_token' : "",
+            'is_valid' : 0,
+            'api_key': os.getenv("OPENAI_API_KEY")
+        }
+
+    def get_state(self):
+        return self.state
+
+
 def get_db(kind):
     # 환경 변수에서 데이터베이스 정보 가져오기
     db_host = os.getenv("DB_HOST")
@@ -62,29 +91,6 @@ def get_age_group(age):
         return 'fifties'
     else:
         return 'sixties'
-    
-def input_text():
-    state = {
-        'model': ChatOpenAI(temperature=0.3, model="gpt-4o-mini"),
-        'question': None,
-        'keywords': {
-            'days': None,
-            'transport': None,
-            'companion': None,
-            'theme': None,
-            'food': None
-        },
-        'foods_context': [],
-        'playing_context': [],
-        'hotel_context': [],
-        'scheduler': "",
-        'explain': "",
-        'second_sentence': "",
-        'user_age': "",
-        'api_key': os.getenv("OPENAI_API_KEY")
-    }
-    
-    return state
 
 def find_keywords(state):
     
@@ -442,6 +448,7 @@ def make_schedule(state):
     state['scheduler']=schedule
     state['explain']=message
     state['model']=model
+    state['is_valid']=1
     return state
 
 def validation(state):
