@@ -98,6 +98,7 @@ def find_keywords(state):
     # 질문과 키워드 기초 상태 받아오기
     question = state['question']
     keywords = state['keywords']
+    state['model'] = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
 
     # GPT에게 현재 입력된 정보로부터 키워드 추출 요청
     prompt = ChatPromptTemplate.from_messages([

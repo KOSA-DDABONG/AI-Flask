@@ -34,20 +34,30 @@ def get_user():
 def making_schedule():
     # 입력된 질문 가져오기
     data = request.json
-    state = data.get('question', '')
+    print("일정 생성")
+    print("[data]")
+    print(data)
+    state = data
+    print("[state]")
+    print(state)
 
     # 키워드 추출 함수 호출
     keywords, response = gptlogic.find_keywords(state)
 
     # 업데이트된 키워드를 this_state에 반영
     state['keywords'] = keywords
+    state['response'] = response
 
+    serializable_state = {k: v for k, v in state.items() if k != 'model'}
+    print(serializable_state)
     # 상태에 따른 응답
     if response != 'End':
-        return jsonify({'response': response})
+        #return jsonify({'response': response})
+        return jsonify(serializable_state)
     else:
         schedule = schedule_make_graph(state)
-        return jsonify({'response': schedule})
+        #return jsonify({'response': schedule})
+        return jsonify(serializable_state)
 
 
 @app.route('/validating', methods=['POST'])
