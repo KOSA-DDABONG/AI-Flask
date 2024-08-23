@@ -3,6 +3,7 @@ import gptlogic
 
 app = Flask(__name__)
 
+
 def schedule_make_graph(this_state):
     this_state = gptlogic.foods_search(this_state)
     this_state = gptlogic.hotels_search(this_state)
@@ -10,9 +11,11 @@ def schedule_make_graph(this_state):
     this_state = gptlogic.make_schedule(this_state)
     return this_state['scheduler']
 
+
 @app.route('/')
 def index():
     return render_template('index.html')
+
 
 @app.route('/get_user', methods=['POST'])
 def get_user():
@@ -20,11 +23,15 @@ def get_user():
     state = user.get_state()
     state['user_age'] = request.args.get("userAge")
     state['user_token'] = request.args.get("userToken")
-    return state
+    print(state)
+
+    serializable_state = {k: v for k, v in state.items() if k != 'model'}
+    print(serializable_state)
+    return jsonify(serializable_state)
+
 
 @app.route('/making', methods=['POST'])
 def making_schedule():
-    
     # 입력된 질문 가져오기
     data = request.json
     state = data.get('question', '')
@@ -41,7 +48,8 @@ def making_schedule():
     else:
         schedule = schedule_make_graph(state)
         return jsonify({'response': schedule})
-    
+
+
 @app.route('/validating', methods=['POST'])
 def validate():
     data = request.json
@@ -49,19 +57,20 @@ def validate():
     state = data.get('question', '')
 
     state = gptlogic.validation(state)
-    if state['second_sentence']=='Good':
+    if state['second_sentence'] == 'Good':
         return jsonify({'response': "일정이 생성되었습니다."})
-    
-    elif state['second_sentence']=='Other':
+
+    elif state['second_sentence'] == 'Other':
         state = gptlogic.make_schedule(state)
         return jsonify({'response': state['scheduler']})
-    
-    elif state['second_sentence']=='Again':
+
+    elif state['second_sentence'] == 'Again':
         new_state = gptlogic.UserState().get_state()
         new_state['user_token'] = state['user_token']
         new_state['user_age'] = state['user_age']
         return new_state
         # 다시 making_schedule 로직실행
+
 
 if __name__ == '__main__':
     app.run(debug=True)

@@ -5,14 +5,14 @@ from sqlalchemy import create_engine
 from langchain_core.prompts import ChatPromptTemplate
 from langchain_openai import ChatOpenAI
 
-
 load_dotenv()
+
 
 class UserState:
     def __init__(self):
         # 초기 상태 설정
         self.state = {
-            'model': ChatOpenAI(temperature=0.3, model="gpt-4o-mini"),
+            'model': ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY")),
             'question': None,
             'keywords': {
                 'days': None,
@@ -28,9 +28,9 @@ class UserState:
             'explain': "",
             'second_sentence': "",
             'user_age': "",
-            'user_token' : "",
-            'is_valid' : 0,
-            'api_key': os.getenv("OPENAI_API_KEY")
+            'user_token': "",
+            'is_valid': 0,
+            #'api_key': os.getenv("OPENAI_API_KEY")
         }
 
     def get_state(self):
@@ -77,6 +77,7 @@ def get_db(kind):
         return df
     return df
 
+
 # 사용자 DB를 조회해서 연령대를 결정하는 함수
 def get_age_group(age):
     if age < 20:
@@ -92,8 +93,8 @@ def get_age_group(age):
     else:
         return 'sixties'
 
+
 def find_keywords(state):
-    
     # 질문과 키워드 기초 상태 받아오기
     question = state['question']
     keywords = state['keywords']
@@ -116,7 +117,7 @@ def find_keywords(state):
     - if the input is '사람들을 만나러 가고싶어' means wanna hang with people, so you can recommend '도시' or '체험' or '쇼핑'
     - if the input is '아무거나' or '상관없어' or '아무데나' means everywhere and everything, so you can recommend randomly from format.
     - if the input is '나머지는 추천해줘' or '나머지는 알아서 해줘' means recommend the rest of categories, so you can recommend from format for the rest of categories.
-    
+
     Following Rules:
     - if you are short of information from user's sentence, but user just want recommend of rest, then you can recommend from format.
     - Recommending is your option, but you just return one keyword at one category.
@@ -144,13 +145,13 @@ def find_keywords(state):
         'response': 'response'
     }}
     """),
-    ("human","{question}, {keywords}")
+        ("human", "{question}, {keywords}")
     ])
 
     chain = prompt | state['model']
     response = chain.invoke({"question": question, "keywords": keywords})
     extracted_keywords = ast.literal_eval(response.content)
-    
+
     # 이미 대답된 정보를 저장
     for key, value in extracted_keywords.items():
         if key in keywords and value is not None and key != 'response':
@@ -158,6 +159,7 @@ def find_keywords(state):
                 keywords[key] = value
 
     return keywords, extracted_keywords['response']
+
 
 def foods_search(state):
     user_age = int(state['user_age'])
@@ -168,38 +170,39 @@ def foods_search(state):
 
     keywords = state['keywords']
     k = int(state['keywords']['days'])
-    
+
     def recommend_restaurants(data, condition, user_age, k):
         # 연령대 설정
         if condition['companion'] == '부모':
             user_age_group = 'sixties'
         else:
             user_age_group = get_age_group(user_age)
-        
+
         # Companion 및 술집 필터링
         if condition['companion'] in ['가족', '부모']:
             data = data[data['bar'] == 0]
-        
+
         # Time-based Filtering
         def filter_by_time(time_slot):
             if time_slot == '아침':
-                return data[(data['operatinghours0'] == 1) | (data['operatinghours1'] == 1) | (data['operatinghours2'] == 1)]
+                return data[
+                    (data['operatinghours0'] == 1) | (data['operatinghours1'] == 1) | (data['operatinghours2'] == 1)]
             elif time_slot == '점심':
                 return data[(data['operatinghours2'] == 1) | (data['operatinghours3'] == 1)]
             elif time_slot == '저녁':
                 return data[(data['operatinghours4'] == 1) | (data['operatinghours5'] == 1)]
-        
+
         # 가중치 계산
         def calculate_weights(row):
             # Food 가중치
             food_weight = 0.43 if row['foodtype'] == condition['food'] else 0.28
-        
+
             # 연령대 가중치
             age_score = row[user_age_group]
-            
+
             # 최종 점수 계산
             return food_weight * age_score
-        
+
         # 아침, 점심, 저녁 별로 추천 4k개만큼
         recommendations = {}
         recommended_restaurants = set()
@@ -207,24 +210,24 @@ def foods_search(state):
             filtered_data = filter_by_time(time_slot).copy()  # 명시적으로 복사본을 생성
             filtered_data['FinalScore'] = filtered_data.apply(calculate_weights, axis=1)
             top_restaurants = filtered_data[~filtered_data['placename'].isin(recommended_restaurants)] \
-                .sort_values(by='FinalScore', ascending=False).head(k*4)
-            
-            recommendations[time_slot] = list(zip(top_restaurants['placename'], top_restaurants['latitude'], top_restaurants['longitude']))
-            
+                .sort_values(by='FinalScore', ascending=False).head(k * 4)
+
+            recommendations[time_slot] = list(
+                zip(top_restaurants['placename'], top_restaurants['latitude'], top_restaurants['longitude']))
+
             # 이미 추천된 식당을 추적하여 다음 시간대에 제외
             recommended_restaurants.update(top_restaurants['placename'])
-        
+
         return recommendations
 
     response = recommend_restaurants(data, keywords, user_age, k)
 
-    
     response = state['foods_context'].append(response)
 
     return state
 
-def hotels_search(state):
 
+def hotels_search(state):
     user_age = int(state['user_age'])
     data = get_db('hotel')
 
@@ -240,47 +243,48 @@ def hotels_search(state):
             user_age_group = 'sixties'
         else:
             user_age_group = get_age_group(user_age)
-        
+
         # 숙박 유형 가중치 설정
         accommodation_weight = {
-        '가족': {'호텔': 0.3, '모텔': 0.1, '펜션': 0.6, '게스트하우스': 0},
-        '부모': {'호텔': 0.48, '모텔': 0.125, '펜션': 0.395, '게스트하우스': 0},
-        '친구': {'호텔': 0.265, '모텔': 0.205, '펜션': 0.26, '게스트하우스': 0.27},
-        '연인': {'호텔': 0.27, '모텔': 0.37, '펜션': 0.27, '게스트하우스': 0.09},
-        '혼자': {'호텔': 0.263, '모텔': 0.264, '펜션': 0, '게스트하우스': 0.473},
+            '가족': {'호텔': 0.3, '모텔': 0.1, '펜션': 0.6, '게스트하우스': 0},
+            '부모': {'호텔': 0.48, '모텔': 0.125, '펜션': 0.395, '게스트하우스': 0},
+            '친구': {'호텔': 0.265, '모텔': 0.205, '펜션': 0.26, '게스트하우스': 0.27},
+            '연인': {'호텔': 0.27, '모텔': 0.37, '펜션': 0.27, '게스트하우스': 0.09},
+            '혼자': {'호텔': 0.263, '모텔': 0.264, '펜션': 0, '게스트하우스': 0.473},
         }
-        
+
         # 필터링
         filtered_data = data.copy()
-        
+
         # 교통수단에 따른 주차 필터링
         if condition['transport'] == '자차':
             filtered_data = filtered_data[filtered_data['parking'] == 'Y']
-        
+
         # 숙박 유형 점수 계산
-        filtered_data['typescore'] = filtered_data['hoteltype'].apply(lambda x: accommodation_weight[condition['companion']].get(x, 0))
-        
+        filtered_data['typescore'] = filtered_data['hoteltype'].apply(
+            lambda x: accommodation_weight[condition['companion']].get(x, 0))
+
         # 연령대 점수 계산
         filtered_data['age_like'] = filtered_data[user_age_group]
-        
+
         # 총점 계산
         filtered_data['FinalScore'] = filtered_data['typescore'] * filtered_data['age_like']
-        
+
         # 총점 기준으로 상위 3k개 숙박지 추천
-        recommended = filtered_data.sort_values(by='FinalScore', ascending=False).head(k*3)
+        recommended = filtered_data.sort_values(by='FinalScore', ascending=False).head(k * 3)
 
         # 이름, 위도, 경도 리스트로 반환
         result = list(zip(recommended['placename'], recommended['latitude'], recommended['longitude']))
         return result
-        
+
     response = recommend_accommodation_with_keywords(data, keywords, user_age, k)
 
     response = state['hotel_context'].append(response)
 
     return state
 
+
 def places_search(state):
-    
     user_age = int(state['user_age'])
     data = get_db('place')
 
@@ -296,7 +300,7 @@ def places_search(state):
             user_age_group = 'sixties'
         else:
             user_age_group = get_age_group(user_age)
-        
+
         # Companion 가중치 계산
         if condition['companion'] == '가족':
             comp = 'family'
@@ -324,9 +328,10 @@ def places_search(state):
             'shopping': ['ocean', 'city', 'festival', 'etc'],
             'festival': ['culture', 'shopping', 'etc'],
             'walking': ['uniquetravel', 'mountain', 'park', 'nature', 'culture', 'history', 'city'],
-            'etc': ['nature', 'walking', 'park', 'shopping', 'uniquetravel', 'culture', 'festival', 'experience', 'history', 'mountain', 'ocean', 'city']
+            'etc': ['nature', 'walking', 'park', 'shopping', 'uniquetravel', 'culture', 'festival', 'experience',
+                    'history', 'mountain', 'ocean', 'city']
         }
-        
+
         # 한글 테마를 영어로 치환하기 위한 매핑 사전
         theme_mapping = {
             '자연': 'nature',
@@ -347,7 +352,7 @@ def places_search(state):
         # condition['theme']가 단일 값일 때
         main_theme = theme_mapping.get(condition['theme'], 'etc')
         related_themes = theme_groups.get(main_theme, [])
-        
+
         # Theme 가중치 계산
         def calculate_theme_weight(row):
             if row[main_theme] == 1:
@@ -356,31 +361,32 @@ def places_search(state):
                 return 0.35
             else:
                 return 0.15
-        
+
         data['ThemeWeight'] = data.apply(calculate_theme_weight, axis=1)
-        
+
         # 연령대 점수와 가중치 곱셈
         data['FinalScore'] = data[user_age_group] * data['CompanionWeight'] * data['ThemeWeight']
-        
+
         # 최종 점수 기준 상위 12K개 여행지 추천
-        recommended = data.sort_values(by='FinalScore', ascending=False).head(k*12)
-        
+        recommended = data.sort_values(by='FinalScore', ascending=False).head(k * 12)
+
         # 이름, 위도, 경도 리스트로 반환
         result = list(zip(recommended['placename'], recommended['latitude'], recommended['longitude']))
 
         # 이름과 상세설명만 반환
         return result
-    
+
     response = recommend_travel_destinations(data, keywords, user_age, k)
 
     response = state['playing_context'].append(response)
 
     return state
 
+
 def make_schedule(state):
-    model = ChatOpenAI(temperature=0.3, model="gpt-4-turbo")
+    model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
     prompt = ChatPromptTemplate.from_messages([
-    ("system", """
+        ("system", """
     Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
 
     ====
@@ -416,16 +422,16 @@ def make_schedule(state):
     generate_itinerary({hotels}, {tourist_spots}, {restaurants}, {days})
     ====
     """),
-        ("human","{hotels}, {tourist_spots}, {restaurants}, {days}")
+        ("human", "{hotels}, {tourist_spots}, {restaurants}, {days}")
     ])
 
     chain = prompt | model
 
     # 올바른 변수명을 사용하여 chain을 실행합니다.
     result = chain.invoke({
-        "hotels": state['hotel_context'], 
-        "tourist_spots": state['playing_context'], 
-        "restaurants": state['foods_context'], 
+        "hotels": state['hotel_context'],
+        "tourist_spots": state['playing_context'],
+        "restaurants": state['foods_context'],
         "days": int(state['keywords']['days'])  # days는 int로 변환
     })
 
@@ -434,7 +440,7 @@ def make_schedule(state):
     # 파싱 전, 중간의 ```json```과 ```를 제거합니다.
     json_start = schedule.find('{')
     json_end = schedule.rfind('}')
-    json_data_str = schedule[json_start:json_end+1]
+    json_data_str = schedule[json_start:json_end + 1]
 
     # JSON을 파싱합니다.
     itinerary_data = json.loads(json_data_str)
@@ -445,16 +451,16 @@ def make_schedule(state):
     message = schedule[message_start:message_end].strip()
 
     schedule = json.dumps(itinerary_data['itinerary'], indent=4, ensure_ascii=False)
-    state['scheduler']=schedule
-    state['explain']=message
-    state['model']=model
-    state['is_valid']=1
+    state['scheduler'] = schedule
+    state['explain'] = message
+    state['model'] = model
+    state['is_valid'] = 1
     return state
 
-def validation(state):
 
-    model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini")
-    
+def validation(state):
+    model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
         Your task is to classify the sentence into one of the following categories: ["Other", "Again", "Good"]
@@ -465,10 +471,10 @@ def validation(state):
             - Again: The user wants to start over or re-enter information. Examples include phrases like '처음부터 할래' or '다시 입력하게 해줘'.
             - Other: The user wants to search again or is unsatisfied with the current result. Examples include phrases like '다시 찾아줘' or '여기 별로야'.
             - Good: The user is satisfied or wants to move forward. Examples include phrases like '알겠어' or '좋아'.
-            
+
             Args:
                 sentence (str): The sentence that needs to be classified.
-            
+
             Returns:
                 Literal["Other", "Again", "Good"]: The classification of the sentence.
         ====
@@ -480,11 +486,11 @@ def validation(state):
         # Response format
         classify("{human}")
         """),
-    ("human", "{human}")
+        ("human", "{human}")
     ])
     chain = prompt | model
     answer = chain.invoke({"human": state['second_sentence']})
     answer = answer.content
-    state['second_sentence']=answer
-    state['model']=model
+    state['second_sentence'] = answer
+    state['model'] = model
     return state
