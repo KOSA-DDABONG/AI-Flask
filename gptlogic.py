@@ -102,7 +102,7 @@ def find_keywords(state):
 
     # GPT에게 현재 입력된 정보로부터 키워드 추출 요청
     prompt = ChatPromptTemplate.from_messages([
-        ("system", """
+       ("system", """
     You need to extract the most relevant information from the user's sentence in the context of a trip. 
     The user may provide information about the following categories:
     1. How many days they want to travel (days).
@@ -111,32 +111,24 @@ def find_keywords(state):
     4. What theme they prefer for the trip (theme).
     5. What type of food they prefer (food).
 
-    Basically, you find keywords from user's input, but you can also recommend keyword as possible as you can.
-    For example
-    - if the input is '쉬러 가고 싶어' means '휴식' so you can recommend '바다' or '자연' or '공원'
-    - if the input is '라면먹고 싶어' means wanna eat '라면' so you can recommend '한식' or '일식'
-    - if the input is '사람들을 만나러 가고싶어' means wanna hang with people, so you can recommend '도시' or '체험' or '쇼핑'
-    - if the input is '아무거나' or '상관없어' or '아무데나' means everywhere and everything, so you can recommend randomly from format.
-    - if the input is '나머지는 추천해줘' or '나머지는 알아서 해줘' means recommend the rest of categories, so you can recommend from format for the rest of categories.
+    Your task is to extract the keywords provided by the user and fill in the relevant categories. You should return the results only within the provided format. 
+    If the user’s input is unclear or if additional categories are missing, ask the user for clarification or more information. 
+    Once all categories are provided, respond with 'End' as the response.
 
-    Following Rules:
-    - if you are short of information from user's sentence, but user just want recommend of rest, then you can recommend from format.
-    - Recommending is your option, but you just return one keyword at one category.
+    Examples of input and output:
 
-    days
-    - just return Number of days. liks 'N'. just integer.
+    - If the input is '쉬러 가고 싶어', the theme is '휴식'. You may also recommend related themes such as '바다', '자연', or '공원'.
+    - If the input is '라면 먹고 싶어', the food preference is '라면', so you can recommend '한식' or '일식'.
+    - If the input is '사람들을 만나러 가고 싶어', the theme could be '도시', '체험', or '쇼핑'.
+    - If the input is '아무거나', '상관없어', or '아무데나', you can recommend randomly from the format.
+    - If the input is '나머지는 추천해줘' or '나머지는 알아서 해줘', recommend the remaining categories based on context.
 
-    transport
-    - if user have a car, or rent a car means '자차', but if user use taxi, bus, airplane, or other things not a car, then '대중교통'
-
-    response
-    - When the number of categories provided from the user's input is insufficient, a message providing additional information may be transmitted to the user as response.
-    - Your reaction is as natural like to respond appropriately to the other person's sentence as you're having a real conversation, and at the same time, you ask questions to receive categories that you lack.
-    - if you get all categories, then just return 'End' at response.
-
-    user input: "{question}, {keywords}"
+    Rules:
+    - If you lack information, ask the user for more details.
+    - If you have all the required categories, respond with 'End' and no further messages.
 
     Return the information in the following format:
+
     {{
         'days': 'Number of days' or None,
         'transport': '자차/대중교통' or None,
@@ -146,7 +138,8 @@ def find_keywords(state):
         'response': 'response'
     }}
     """),
-        ("human", "{question}, {keywords}")
+    ("human","{question}, {keywords}")
+
     ])
 
     chain = prompt | state['model']
@@ -385,77 +378,73 @@ def places_search(state):
 
 
 def make_schedule(state):
-    model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+    model = ChatOpenAI(temperature=0.3, model="gpt-4-turbo")
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
-    Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
+        Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include
+        a daily schedule in JSON format.
 
-    ====
-    def generate_itinerary(hotels: list, tourist_spots: list, restaurants: dict, days: int) -> dict:
-        Generates a travel itinerary for 'n' days using the provided data. The itinerary should be returned in JSON format and follow these guidelines:
+        ====
+        def generate_itinerary(hotels: list, tourist_spots: list, restaurants: dict, days: int) -> dict:
+            Generates a travel itinerary for 'n' days using the provided data. The itinerary should be returned in JSON format
+            and follow these guidelines:
 
-        - Each day's itinerary must include breakfast, lunch, and dinner. Breakfast and lunch should be at different restaurants, while dinner can also be at a restaurant or bar.
-        - Each day should include visits to 2 different tourist spots, with a balanced mix of activities (e.g., cultural, natural, historical).
-        - A different hotel should be assigned each night, with a maximum of 3 consecutive nights at the same hotel to ensure variety.
-        - The itinerary should start at a central location on the first day and end at the same location on the last day (e.g., a train station), but this location is not considered a tourist spot.
-        - The itinerary should be unique and slightly different each time it is generated, with random selections of restaurants, tourist spots, and hotels to provide a varied experience.
-        - The JSON output should use the day number as the key and include the itinerary for that day as the value.
-        - The last day should not include a hotel stay.
-        - Provide a detailed explanation of why the itinerary was planned in this way, considering factors such as travel convenience, variety, user preferences, and the optimal use of time.
+            - Each day's itinerary must include breakfast, lunch, and dinner. Breakfast and lunch should be at different restaurants, 
+              while dinner can also be at a restaurant or bar.
+            - Each day should include visits to 2 different tourist spots, with a balanced mix of activities (e.g., cultural, 
+              natural, historical).
+            - A different hotel should be assigned each night, with a maximum of 3 consecutive nights at the same hotel to ensure variety.
+            - The itinerary should start at a central location on the first day and end at the same location on the last day 
+              (e.g., a train station), but this location is not considered a tourist spot.
+            - The itinerary should be unique and slightly different each time it is generated, with random selections of restaurants, 
+              tourist spots, and hotels to provide a varied experience.
+            - The itinerary should ensure that daily movements are geographically logical:
+                - Each day's activities should occur within a reasonable proximity, ideally within 5 km of each other.
+                - The itinerary should follow a general direction or loop, minimizing unnecessary backtracking.
+            
+            Args:
+                hotels (list): A list of tuples, where each tuple contains the hotel name, latitude, and longitude 
+                               (e.g., [(name, latitude, longitude), ...]).
+                tourist_spots (list): A list of tuples, where each tuple contains the tourist spot name, latitude, and longitude 
+                                      (e.g., [(name, latitude, longitude), ...]).
+                restaurants (dict): A dictionary with keys '아침', '점심', '저녁', and values are lists of tuples containing the 
+                                    restaurant name, latitude, and longitude (e.g., {{'아침': [(name, latitude, longitude), ...], 
+                                    '점심': [...], '저녁': [...]}}).
+                days (int): The number of days for the itinerary.
 
-        Args:
-            hotels (list): A list of tuples, where each tuple contains the hotel name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
-            tourist_spots (list): A list of tuples, where each tuple contains the tourist spot name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
-            restaurants (dict): A dictionary with keys '아침', '점심', '저녁', and values are lists of tuples containing the restaurant name, latitude, and longitude (e.g., {{'아침': [(name, latitude, longitude), ...], '점심': [...], '저녁': [...]}}).
-            days (int): The number of days for the itinerary.
-
-        Returns:
-            dict: A dictionary with two keys:
-                1. "reasoning": A detailed explanation of the rationale behind the itinerary to korean.
-                2. "itinerary": A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations for breakfast, lunch, dinner, and two tourist spots, along with their respective names and coordinates.
-
-    # Example usage
-    result = generate_itinerary(hotels, tourist_spots, restaurants, days)
-    return result
-
-    ====
-    # Response format
-    generate_itinerary({hotels}, {tourist_spots}, {restaurants}, {days})
-    ====
-    """),
+            Returns:
+                dict: A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations 
+                      for breakfast, lunch, dinner, and two tourist spots, along with their respective names and coordinates.
+        ====
+        """),
         ("human", "{hotels}, {tourist_spots}, {restaurants}, {days}")
     ])
 
     chain = prompt | model
 
-    # 올바른 변수명을 사용하여 chain을 실행합니다.
     result = chain.invoke({
-        "hotels": state['hotel_context'],
-        "tourist_spots": state['playing_context'],
-        "restaurants": state['foods_context'],
+        "hotels": state['hotel_context'], 
+        "tourist_spots": state['playing_context'], 
+        "restaurants": state['foods_context'], 
         "days": int(state['keywords']['days'])  # days는 int로 변환
     })
 
     schedule = result.content
 
-    # 파싱 전, 중간의 ```json```과 ```를 제거합니다.
+    # JSON 부분 찾기
     json_start = schedule.find('{')
     json_end = schedule.rfind('}')
-    json_data_str = schedule[json_start:json_end + 1]
+    json_data_str = schedule[json_start:json_end+1]
 
-    # JSON을 파싱합니다.
+    # JSON 파싱
     itinerary_data = json.loads(json_data_str)
 
-    # 메시지 추출: JSON 파싱 전의 텍스트를 추출하여 메시지로 저장합니다.
-    message_start = schedule.find("Based on the provided data")
-    message_end = json_start
-    message = schedule[message_start:message_end].strip()
-
+    # 상태 업데이트
     schedule = json.dumps(itinerary_data['itinerary'], indent=4, ensure_ascii=False)
     state['scheduler'] = schedule
-    state['explain'] = message
     state['model'] = model
     state['is_valid'] = 1
+
     return state
 
 
