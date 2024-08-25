@@ -1,5 +1,6 @@
-from flask import Flask, request, jsonify, render_template
+from flask import Flask, request, jsonify, render_template, Response
 import gptlogic
+import json  # 여기서 json 모듈을 import 합니다.
 
 app = Flask(__name__)
 
@@ -27,7 +28,8 @@ def get_user():
 
     serializable_state = {k: v for k, v in state.items() if k != 'model'}
     print(serializable_state)
-    return jsonify(serializable_state)
+    response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
+    return Response(response_json, content_type="application/json; charset=utf-8")
 
 
 @app.route('/making', methods=['POST'])
@@ -49,15 +51,17 @@ def making_schedule():
     state['response'] = response
 
     serializable_state = {k: v for k, v in state.items() if k != 'model'}
+    response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     print(serializable_state)
     # 상태에 따른 응답
     if response != 'End':
-        #return jsonify({'response': response})
-        return jsonify(serializable_state)
+        return Response(response_json, content_type="application/json; charset=utf-8")
     else:
         schedule = schedule_make_graph(state)
-        #return jsonify({'response': schedule})
-        return jsonify(serializable_state)
+        print("[schedule]")
+        print(schedule)
+        #return Response(response_json, content_type="application/json; charset=utf-8")
+        return Response(schedule, content_type="application/json; charset=utf-8")
 
 
 @app.route('/validating', methods=['POST'])
@@ -68,17 +72,20 @@ def validate():
 
     state = gptlogic.validation(state)
     if state['second_sentence'] == 'Good':
-        return jsonify({'response': "일정이 생성되었습니다."})
+        response_json = json.dumps({'response': "일정이 생성되었습니다."}, ensure_ascii=False)
+        return Response(response_json, content_type="application/json; charset=utf-8")
 
     elif state['second_sentence'] == 'Other':
         state = gptlogic.make_schedule(state)
-        return jsonify({'response': state['scheduler']})
+        response_json = json.dumps({'response': state['scheduler']}, ensure_ascii=False)
+        return Response(response_json, content_type="application/json; charset=utf-8")
 
     elif state['second_sentence'] == 'Again':
         new_state = gptlogic.UserState().get_state()
         new_state['user_token'] = state['user_token']
         new_state['user_age'] = state['user_age']
-        return new_state
+        response_json = json.dumps(new_state, ensure_ascii=False)
+        return Response(response_json, content_type="application/json; charset=utf-8")
         # 다시 making_schedule 로직실행
 
 
