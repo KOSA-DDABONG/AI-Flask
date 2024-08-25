@@ -135,7 +135,7 @@ def find_keywords(state):
         'companion': '가족/부모/친구/연인/혼자' or None,
         'theme': '자연/걷기/쇼핑/공원/이색여행/문화/체험/역사/산/바다/도시' or None,
         'food': '한식/양식/중식/일식/아시아' or None,
-        'response': 'response'
+        'response': 'response' or If you have all categories, return 'End'
     }}
     """),
     ("human","{question}, {keywords}")
