@@ -103,42 +103,45 @@ def find_keywords(state):
     # GPT에게 현재 입력된 정보로부터 키워드 추출 요청
     prompt = ChatPromptTemplate.from_messages([
        ("system", """
-    You need to extract the most relevant information from the user's sentence in the context of a trip. 
-    The user may provide information about the following categories:
-    1. How many days they want to travel (days).
-    2. What transportation they have (transport).
-    3. Who they are traveling with (companion).
-    4. What theme they prefer for the trip (theme).
-    5. What type of food they prefer (food).
+        You are tasked with extracting the most relevant information from the user's sentence related to a trip, based on the following categories:
 
-    Your task is to extract the keywords provided by the user and fill in the relevant categories. You should return the results only within the provided format. 
-    If the user’s input is unclear or if additional categories are missing, ask the user for clarification or more information. 
-    Once all categories are provided, respond with 'End' as the response.
+        1. **How many days they want to travel (days)**:
+        - Extract the number of days as an integer (e.g., 3).
+        
+        2. **What transportation they have (transport)**:
+        - Identify whether they have a car ('자차') or will use public transportation ('대중교통') such as taxis, buses, or airplanes.
 
-    Examples of input and output:
+        3. **Who they are traveling with (companion)**:
+        - Identify the companion from options like '가족' (family), '부모' (parents), '친구' (friends), '연인' (partner), or '혼자' (alone).
 
-    - If the input is '쉬러 가고 싶어', the theme is '휴식'. You may also recommend related themes such as '바다', '자연', or '공원'.
-    - If the input is '라면 먹고 싶어', the food preference is '라면', so you can recommend '한식' or '일식'.
-    - If the input is '사람들을 만나러 가고 싶어', the theme could be '도시', '체험', or '쇼핑'.
-    - If the input is '아무거나', '상관없어', or '아무데나', you can recommend randomly from the format.
-    - If the input is '나머지는 추천해줘' or '나머지는 알아서 해줘', recommend the remaining categories based on context.
+        4. **What theme they prefer for the trip (theme)**:
+        - Extract the theme from options like '자연' (nature), '걷기' (walking), '쇼핑' (shopping), '공원' (parks), '이색여행' (unique trips), '문화' (culture), '체험' (experience), '역사' (history), '산' (mountains), '바다' (sea), or '도시' (city).
 
-    Rules:
-    - If you lack information, ask the user for more details.
-    - If you have all the required categories, respond with 'End' and no further messages.
+        5. **What type of food they prefer (food)**:
+        - Identify the type of food from options like '한식' (Korean food), '양식' (Western food), '중식' (Chinese food), '일식' (Japanese food), or '아시아' (Asian food).
 
-    Return the information in the following format:
+        **Response**:
+        - If some categories are missing from the user's input, ask follow-up questions to gather more information naturally, as if engaging in a conversation. 
+        - If all categories are provided, return 'End' at response.
 
-    {{
-        'days': 'Number of days' or None,
-        'transport': '자차/대중교통' or None,
-        'companion': '가족/부모/친구/연인/혼자' or None,
-        'theme': '자연/걷기/쇼핑/공원/이색여행/문화/체험/역사/산/바다/도시' or None,
-        'food': '한식/양식/중식/일식/아시아' or None,
-        'response': 'response' or If you have all categories, return 'End'
-    }}
-    """),
-    ("human","{question}, {keywords}")
+        **Examples**:
+        1. If the input is "쉬러 가고 싶어" (I want to rest), suggest themes like '휴식' (rest), and recommend '바다' (sea), '자연' (nature), or '공원' (parks).
+        2. If the input is "라면먹고 싶어" (I want to eat ramen), suggest '라면' (ramen) and recommend '한식' (Korean food) or '일식' (Japanese food).
+        3. If the input is "사람들을 만나러 가고싶어" (I want to meet people), suggest '도시' (city), '체험' (experience), or '쇼핑' (shopping).
+        4. If the input is "아무거나" or "상관없어" or "아무데나" (anything, anywhere), recommend randomly from the provided options.
+        5. If the input is "나머지는 추천해줘" or "나머지는 알아서 해줘" (recommend the rest), suggest options for the categories that were not provided.
+
+        Return the information in the following format:
+        {
+            'days': 'Number of days' or None,
+            'transport': '자차/대중교통' or None,
+            'companion': '가족/부모/친구/연인/혼자' or None,
+            'theme': '자연/걷기/쇼핑/공원/이색여행/문화/체험/역사/산/바다/도시' or None,
+            'food': '한식/양식/중식/일식/아시아' or None,
+            'response': 'response'
+        }
+        """),
+        ("human","{question}, {keywords}")
 
     ])
 
