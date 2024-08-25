@@ -6,10 +6,11 @@ app = Flask(__name__)
 
 
 def schedule_make_graph(this_state):
-    this_state = gptlogic.foods_search(this_state)
-    this_state = gptlogic.hotels_search(this_state)
-    this_state = gptlogic.places_search(this_state)
+    this_state = gptlogic.searching(this_state, 'food')
+    this_state = gptlogic.searching(this_state, 'hotel')
+    this_state = gptlogic.searching(this_state, 'place')
     this_state = gptlogic.make_schedule(this_state)
+
     return this_state['scheduler']
 
 
@@ -87,6 +88,17 @@ def validate():
         response_json = json.dumps(new_state, ensure_ascii=False)
         return Response(response_json, content_type="application/json; charset=utf-8")
         # 다시 making_schedule 로직실행
+
+
+@app.route('/updating_place', methods=['POST'])
+def updating():
+    data = request.json
+
+    state = data.get('state', '')
+    change_place = data.get('placename', '')
+    result_place = gptlogic.update_place(change_place, state)
+    return jsonify({'result': result_place})
+
 
 
 if __name__ == '__main__':
