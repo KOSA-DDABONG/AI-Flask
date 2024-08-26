@@ -25,10 +25,9 @@ def get_user():
     state = user.get_state()
     state['user_age'] = request.args.get("userAge")
     state['user_token'] = request.args.get("userToken")
-    print(state)
-
+    
     serializable_state = {k: v for k, v in state.items()}
-    print(serializable_state)
+    
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     return Response(response_json, content_type="application/json; charset=utf-8")
 
@@ -37,13 +36,9 @@ def get_user():
 def making_schedule():
     # 입력된 질문 가져오기
     data = request.json
-    print("일정 생성")
-    print("[data]")
-    print(data)
+    
     state = data
-    print("[state]")
-    print(state)
-
+    
     # 키워드 추출 함수 호출
     keywords, response = gptlogic.find_keywords(state)
 
@@ -53,17 +48,14 @@ def making_schedule():
 
     serializable_state = {k: v for k, v in state.items()}
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
-    print(serializable_state)
+    
     # 상태에 따른 응답
-    if response == 'End' or all(value is not None for value in state['keywords'].values()):
-        schedule = schedule_make_graph(state)
-        print("[schedule]")
-        print(schedule)
-        #return Response(response_json, content_type="application/json; charset=utf-8")
-        return Response(schedule, content_type="application/json; charset=utf-8")
-    else:
-        return Response(response_json, content_type="application/json; charset=utf-8")
-
+    schedule = schedule_make_graph(state)
+    serializable_state = {k: v for k, v in state.items()}
+    response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
+        
+    return Response(response_json, content_type="application/json; charset=utf-8")
+    
 
 @app.route('/validating', methods=['POST'])
 def validate():
@@ -78,14 +70,16 @@ def validate():
 
     elif state['second_sentence'] == 'Other':
         state = gptlogic.make_schedule(state)
-        response_json = json.dumps({'response': state['scheduler']}, ensure_ascii=False)
+        serializable_state = {k: v for k, v in new_state.items()}
+        response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
         return Response(response_json, content_type="application/json; charset=utf-8")
 
     elif state['second_sentence'] == 'Again':
         new_state = gptlogic.UserState().get_state()
         new_state['user_token'] = state['user_token']
         new_state['user_age'] = state['user_age']
-        response_json = json.dumps(new_state, ensure_ascii=False)
+        serializable_state = {k: v for k, v in new_state.items()}
+        response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
         return Response(response_json, content_type="application/json; charset=utf-8")
         # 다시 making_schedule 로직실행
 
