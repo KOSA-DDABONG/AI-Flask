@@ -129,8 +129,8 @@ def find_keywords(state):
     - When the number of categories provided from the user's input is insufficient, a message providing additional information may be transmitted to the user as response.
     -  Your response will respond appropriately to the other person's sentences as if they were having a real conversation and return questions about the missing keywords.
     - React so that users can feel that they are talking.
-    - if you get all categories, then just return 'End' at response.
     - response like kind and natural tour guide. 
+    - if you get all categories, then just return 'End' at response.
 
    theme
    - you have to select keywords in the following format.
@@ -383,7 +383,7 @@ def searching(state, whatwant):
         return state
 
 def make_schedule(state):
-    model = ChatOpenAI(temperature=0.1, model="gpt-4-turbo", api_key=os.getenv("OPENAI_API_KEY"))
+    model = ChatOpenAI(temperature=0.16, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
     Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
