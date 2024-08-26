@@ -72,12 +72,14 @@ def validate():
         state = gptlogic.make_schedule(state)
         serializable_state = {k: v for k, v in state.items()}
         response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
+        print("다시 만들어주는 로직")
         return Response(response_json, content_type="application/json; charset=utf-8")
 
     elif state['second_sentence'] == 'Again':
         new_state = gptlogic.UserState().get_state()
         new_state['user_token'] = state['user_token']
         new_state['user_age'] = state['user_age']
+        print("첨부터의 로직")
         serializable_state = {k: v for k, v in new_state.items()}
         response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
         return Response(response_json, content_type="application/json; charset=utf-8")
