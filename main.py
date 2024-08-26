@@ -55,14 +55,14 @@ def making_schedule():
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     print(serializable_state)
     # 상태에 따른 응답
-    if response != 'End' or all(value is not None for value in state['keywords'].values()):
-        return Response(response_json, content_type="application/json; charset=utf-8")
-    else:
+    if response == 'End' or all(value is not None for value in state['keywords'].values()):
         schedule = schedule_make_graph(state)
         print("[schedule]")
         print(schedule)
         #return Response(response_json, content_type="application/json; charset=utf-8")
         return Response(schedule, content_type="application/json; charset=utf-8")
+    else:
+        return Response(response_json, content_type="application/json; charset=utf-8")
 
 
 @app.route('/validating', methods=['POST'])

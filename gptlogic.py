@@ -386,42 +386,42 @@ def make_schedule(state):
     model = ChatOpenAI(temperature=0.16, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
-    Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
+        Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
 
-    ====
-    def generate_itinerary(hotels: list, tourist_spots: list, restaurants: dict, days: int) -> dict:
-        Generates a travel itinerary for 'n' days using the provided data. The itinerary should be returned in JSON format and follow these guidelines:
+        ====
+        def generate_itinerary(hotels: list, tourist_spots: list, restaurants: dict, days: int) -> dict:
+            Generates a travel itinerary for 'n' days using the provided data. The itinerary should be returned in JSON format and follow these guidelines:
 
-        - Each day's itinerary must include breakfast, lunch, and dinner. Breakfast and lunch should be at different restaurants, while dinner can also be at a restaurant or bar.
-        - Each day should include visits to 2 different tourist spots, with a balanced mix of activities (e.g., cultural, natural, historical).
-        - A different hotel should be assigned each night, with a maximum of 3 consecutive nights at the same hotel to ensure variety.
-        - The itinerary should start at a central location on the first day and end at the same location on the last day (e.g., a train station), but this location is not considered a tourist spot.
-        - The itinerary should be unique and slightly different each time it is generated, with random selections of restaurants, tourist spots, and hotels to provide a varied experience.
-        - The JSON output should use the day number as the key and include the itinerary for that day as the value.
-        - The last day should not include a hotel stay.
-        - Provide a detailed explanation of why the itinerary was planned in this way, considering factors such as travel convenience, variety, user preferences, and the optimal use of time.
+            - Each day's itinerary must include breakfast, lunch, and dinner, but the timing of meals should vary to simulate real-life travel flexibility.
+            - Tourist spots should be selected in a way that ensures a variety of experiences, avoiding repetition and ensuring a mix of cultural, natural, and historical sites.
+            - Randomize the choice of hotels, ensuring that no more than 3 consecutive nights are spent in the same hotel, but not necessarily rotating every night.
+            - Ensure a logical flow of travel that minimizes unnecessary backtracking and maximizes time spent enjoying the locations.
+            - The itinerary should begin and end at a central location, but this location does not count as a tourist spot.
+            - The JSON output should use the day number as the key and include the itinerary for that day as the value.
+            - The last day should not include a hotel stay.
+            - Provide a detailed explanation of why the itinerary was planned in this way, considering factors such as travel convenience, variety, user preferences, and the optimal use of time.
 
-        Args:
-            hotels (list): A list of tuples, where each tuple contains the hotel name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
-            tourist_spots (list): A list of tuples, where each tuple contains the tourist spot name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
-            restaurants (dict): A dictionary with keys '아침', '점심', '저녁', and values are lists of tuples containing the restaurant name, latitude, and longitude (e.g., {{'아침': [(name, latitude, longitude), ...], '점심': [...], '저녁': [...]}}).
-            days (int): The number of days for the itinerary.
+            Args:
+                hotels (list): A list of tuples, where each tuple contains the hotel name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
+                tourist_spots (list): A list of tuples, where each tuple contains the tourist spot name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
+                restaurants (dict): A dictionary with keys '아침', '점심', '저녁', and values are lists of tuples containing the restaurant name, latitude, and longitude (e.g., {{'아침': [(name, latitude, longitude), ...], '점심': [...], '저녁': [...]}}).
+                days (int): The number of days for the itinerary.
 
-        Returns:
-            dict: A dictionary with two keys:
-                1. "reasoning": A detailed explanation of the rationale behind the itinerary to korean.
-                2. "itinerary": A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations for breakfast, lunch, dinner, and two tourist spots, along with their respective names and coordinates.
+            Returns:
+                dict: A dictionary with two keys:
+                    1. "reasoning": A detailed explanation of the rationale behind the itinerary to korean.
+                    2. "itinerary": A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations for breakfast, lunch, dinner, and two tourist spots, along with their respective names and coordinates.
 
-    # Example usage
-    result = generate_itinerary(hotels, tourist_spots, restaurants, days)
-    return result
+        # Example usage
+        result = generate_itinerary(hotels, tourist_spots, restaurants, days)
+        return result
 
-    ====
-    # Response format
-    generate_itinerary({hotels}, {tourist_spots}, {restaurants}, {days})
-    ====
-    """),
-        ("human","{hotels}, {tourist_spots}, {restaurants}, {days}")
+        ====
+        # Response format
+        generate_itinerary({hotels}, {tourist_spots}, {restaurants}, {days})
+        ====
+        """),
+        ("human", "{hotels}, {tourist_spots}, {restaurants}, {days}")
     ])
 
     chain = prompt | model
@@ -431,7 +431,7 @@ def make_schedule(state):
         "hotels": state['hotel_context'],
         "tourist_spots": state['playing_context'],
         "restaurants": state['foods_context'],
-        "days": int(state['keywords']['days'])  # days는 int로 변환
+        "days": int(state['keywords']['days'])
     })
 
     schedule = result.content
@@ -444,14 +444,9 @@ def make_schedule(state):
     # JSON을 파싱합니다.
     itinerary_data = json.loads(json_data_str)
 
-    # 메시지 추출: JSON 파싱 전의 텍스트를 추출하여 메시지로 저장합니다.
-    message_start = schedule.find("Based on the provided data")
-    message_end = json_start
-    message = schedule[message_start:message_end].strip()
-
     schedule = json.dumps(itinerary_data['itinerary'], indent=4, ensure_ascii=False)
     state['scheduler'] = schedule
-    state['explain'] = message
+    state['explain'] = itinerary_data['reasoning']
     state['is_valid'] = 1
     return state
 
