@@ -27,7 +27,7 @@ def get_user():
     state['user_token'] = request.args.get("userToken")
     print(state)
 
-    serializable_state = {k: v for k, v in state.items() if k != 'model'}
+    serializable_state = {k: v for k, v in state.items()}
     print(serializable_state)
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     return Response(response_json, content_type="application/json; charset=utf-8")
@@ -51,7 +51,7 @@ def making_schedule():
     state['keywords'] = keywords
     state['response'] = response
 
-    serializable_state = {k: v for k, v in state.items() if k != 'model'}
+    serializable_state = {k: v for k, v in state.items()}
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     print(serializable_state)
     # 상태에 따른 응답
