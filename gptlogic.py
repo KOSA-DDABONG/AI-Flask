@@ -94,7 +94,7 @@ def find_keywords(state):
     # 질문과 키워드 기초 상태 받아오기
     question = state['question']
     keywords = state['keywords']
-    model = ChatOpenAI(temperature=0.2, model="gpt-4-turbo", api_key=os.getenv("OPENAI_API_KEY"))
+    model = ChatOpenAI(temperature=0.15, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
 
     # GPT에게 현재 입력된 정보로부터 키워드 추출 요청
     prompt = ChatPromptTemplate.from_messages([
@@ -114,7 +114,7 @@ def find_keywords(state):
     - if the input is '사람들을 만나러 가고싶어' means wanna hang with people, so you can recommend '도시' or '체험' or '쇼핑'
     - if the input is '아무거나' or '상관없어' or '아무데나' means everywhere and everything, so you can recommend randomly from format.
     - if the input is '나머지는 추천해줘' or '나머지는 알아서 해줘' means recommend the rest of categories, so you can recommend from format for the rest of categories.
-    
+
     Following Rules:
     - if you are short of information from user's sentence, but user just want recommend of rest, then you can recommend from format.
     - Recommending is your option, but you just return one keyword at one category.
@@ -127,8 +127,15 @@ def find_keywords(state):
 
     response
     - When the number of categories provided from the user's input is insufficient, a message providing additional information may be transmitted to the user as response.
-    - Your reaction is as natural like to respond appropriately to the other person's sentence as you're having a real conversation, and at the same time, you ask questions to receive categories that you lack.
+    -  Your response will respond appropriately to the other person's sentences as if they were having a real conversation and return questions about the missing keywords.
+    - React so that users can feel that they are talking.
     - if you get all categories, then just return 'End' at response.
+    - response like kind and natural tour guide. 
+
+   theme
+   - you have to select keywords in the following format.
+   - If the keyword you extracted is not in the format, you should return the most similar list of the list presented in the format.
+
 
     user input: "{question}, {keywords}"
 
@@ -376,7 +383,7 @@ def searching(state, whatwant):
         return state
 
 def make_schedule(state):
-    model = ChatOpenAI(temperature=0.3, model="gpt-4-turbo", api_key=os.getenv("OPENAI_API_KEY"))
+    model = ChatOpenAI(temperature=0.1, model="gpt-4-turbo", api_key=os.getenv("OPENAI_API_KEY"))
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
     Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
