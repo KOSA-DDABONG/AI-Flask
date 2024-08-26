@@ -11,7 +11,7 @@ def schedule_make_graph(this_state):
     this_state = gptlogic.searching(this_state, 'place')
     this_state = gptlogic.make_schedule(this_state)
 
-    return this_state['scheduler']
+    return this_state
 
 
 @app.route('/')
@@ -50,7 +50,7 @@ def making_schedule():
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     
     # 상태에 따른 응답
-    schedule = schedule_make_graph(state)
+    state = schedule_make_graph(state)
     serializable_state = {k: v for k, v in state.items()}
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
         
