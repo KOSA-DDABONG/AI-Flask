@@ -70,7 +70,7 @@ def validate():
 
     elif state['second_sentence'] == 'Other':
         state = gptlogic.make_schedule(state)
-        serializable_state = {k: v for k, v in new_state.items()}
+        serializable_state = {k: v for k, v in state.items()}
         response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
         return Response(response_json, content_type="application/json; charset=utf-8")
 
