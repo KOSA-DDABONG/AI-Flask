@@ -69,7 +69,7 @@ def making_schedule():
 def validate():
     data = request.json
 
-    state = data.get('question', '')
+    state = data
 
     state = gptlogic.validation(state)
     if state['second_sentence'] == 'Good':
