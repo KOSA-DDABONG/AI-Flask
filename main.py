@@ -64,15 +64,15 @@ def validate():
     data = request.json
 
     state = data
+    schedule = state['scheduler']
 
     state = gptlogic.validation(state)
     if state['second_sentence'] == 'Good':
         combined_response = {
-            "scheduler" : json.loads(state['scheduler']),
+            "scheduler" : schedule,
             "message" : "일정이 생성되었습니다."
         }
-        response_json = json.dumps(combined_response, ensure_ascii=False)
-        return Response(response_json, content_type="application/json; charset=utf-8")
+        return Response(combined_response, content_type="application/json; charset=utf-8")
 
     elif state['second_sentence'] == 'Other':
         state = gptlogic.make_schedule(state)
