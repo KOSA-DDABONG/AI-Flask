@@ -383,7 +383,7 @@ def searching(state, whatwant):
         return state
 
 def make_schedule(state):
-    model = ChatOpenAI(temperature=0.16, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+    model = ChatOpenAI(temperature=0.33, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
         Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
@@ -411,7 +411,8 @@ def make_schedule(state):
             Returns:
                 dict: A dictionary with two keys:
                     1. "reasoning": A detailed explanation of the rationale behind the itinerary to korean.
-                    2. "itinerary": A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations for breakfast, lunch, dinner, and two tourist spots, along with their respective names and coordinates.
+                    2. "itinerary": - A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations for breakfast, lunch, dinner, and tourist spots, along with their respective names and coordinates.
+                                    - About Day key is not like 'Day 1' or 'day1'. just like '1'(Only Integer)
 
         # Example usage
         result = generate_itinerary(hotels, tourist_spots, restaurants, days)
