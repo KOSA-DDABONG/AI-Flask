@@ -68,11 +68,10 @@ def validate():
     state = gptlogic.validation(state)
     if state['second_sentence'] == 'Good':
         combined_response = {
-            "scheduler" : state['scheduler'],
+            "scheduler" : json.loads(state['scheduler']),
             "message" : "일정이 생성되었습니다."
         }
-        serializable_state = {k: v for k, v in combined_response.items()}
-        response_json = json.dumps(serializable_state, ensure_ascii=False)
+        response_json = json.dumps(combined_response, ensure_ascii=False)
         return Response(response_json, content_type="application/json; charset=utf-8")
 
     elif state['second_sentence'] == 'Other':
