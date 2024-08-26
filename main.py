@@ -55,7 +55,7 @@ def making_schedule():
     response_json = json.dumps(serializable_state, ensure_ascii=False)  # UTF-8 인코딩
     print(serializable_state)
     # 상태에 따른 응답
-    if response != 'End':
+    if response != 'End' or all(value is not None for value in state['keywords'].values()):
         return Response(response_json, content_type="application/json; charset=utf-8")
     else:
         schedule = schedule_make_graph(state)
