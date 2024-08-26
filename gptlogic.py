@@ -394,8 +394,9 @@ def make_schedule(state):
 
             - Each day's itinerary must include breakfast, lunch, and dinner, but the timing of meals should vary to simulate real-life travel flexibility.
             - Tourist spots should be selected in a way that ensures a variety of experiences, avoiding repetition and ensuring a mix of cultural, natural, and historical sites.
-            - Randomize the choice of hotels, ensuring that no more than 3 consecutive nights are spent in the same hotel, but not necessarily rotating every night.
-            - Ensure a logical flow of travel that minimizes unnecessary backtracking and maximizes time spent enjoying the locations.
+            - Each day can include 1 to 3 Tourist spots.
+            - Randomize the choice of hotels, ensuring that no more than 3 consecutive nights are spent in the same hotel, but not necessarily to choice new at every night.
+            - Ensure a logical flow of travel that minimizes unnecessary backtracking and maximizes time spent enjoying the locations(consider latitude and longitude).
             - The itinerary should begin and end at a central location, but this location does not count as a tourist spot.
             - The JSON output should use the day number as the key and include the itinerary for that day as the value.
             - The last day should not include a hotel stay.
