@@ -29,6 +29,7 @@ class UserState:
             'user_age': "",
             'user_token': "",
             'is_valid': 0,
+            'message': ''
         }
 
     def get_state(self):
