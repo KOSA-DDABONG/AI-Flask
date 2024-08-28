@@ -383,7 +383,7 @@ def searching(state, whatwant):
         return state
 
 def make_schedule(state):
-    model = ChatOpenAI(temperature=0.33, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+    model = ChatOpenAI(temperature=0.24, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
     prompt = ChatPromptTemplate.from_messages([
         ("system", """
         Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
@@ -415,38 +415,44 @@ def make_schedule(state):
                                     - About Day key is not like 'Day 1' or 'day1'. just like '1'(Only Integer)
 
             Result Example:
+                
                 {{
-                    "1": {{
-                        "hotel": ["hotlename", 35.1513595581054, 129.06109619140625],
-                        "breakfast": ["rest_name", 35.2246055146469, 129.148646659037],
-                        "tourist_spots": [
-                            ["spots1_name", 35.01167297363281, 128.8254852294922],
-                            ["spots2_name", 35.169857025146484, 129.12281799316406]
-                        ],
-                        "lunch": ["lunch_name", 35.1551022324523, 129.145319493009],
-                        "dinner": ["dinn_name", 35.1844877012449, 129.121940951309]
-                        }},
-                    "2": {{
-                        "hotel": ["태림하우스", 35.11400604248047, 129.03668212890625],
-                        "breakfast": ["대도회초밥", 35.2192141948918, 129.081791710508],
-                        "tourist_spots": [
-                            ["사라수변공원", 35.23820114135742, 129.20489501953125],
-                            ["동백방파제", 35.288211822509766, 129.2550048828125],
-                            ["일광해수욕장", 35.2600212097168, 129.23361206054688]
-                        ],
-                        "lunch": ["디레스토랑 부산송정점", 35.1754317318232, 129.196461833639],
-                        "dinner": ["감전인생술집", 35.1562930957189, 128.982539799551]
-                        }},
-                    "3": {{
-                        "breakfast": ["두툼연어", 35.1562045357109, 129.061599372169],
-                        "tourist_spots": [
-                            ["천마산전망대", 35.08916091918945, 129.01455688476562],
-                            ["병산저수지", 35.34368896484375, 129.17283630371094]
-                        ],
-                        "lunch": ["고베규카츠", 35.1546901639815, 129.06064344352],
-                        "dinner": ["파머스버거", 35.1015038640655, 129.031248439071]
-                        }}
+                "reasoning": "A detailed explanation of the rationale behind the itinerary to korean.",
+                "itinerary":
+                    {{
+                        "1": {{
+                            "hotel": ["hotlename", 35.1513595581054, 129.06109619140625],
+                            "breakfast": ["rest_name", 35.2246055146469, 129.148646659037],
+                            "tourist_spots": [
+                                ["spots1_name", 35.01167297363281, 128.8254852294922],
+                                ["spots2_name", 35.169857025146484, 129.12281799316406]
+                            ],
+                            "lunch": ["lunch_name", 35.1551022324523, 129.145319493009],
+                            "dinner": ["dinn_name", 35.1844877012449, 129.121940951309]
+                            }},
+                        "2": {{
+                            "hotel": ["태림하우스", 35.11400604248047, 129.03668212890625],
+                            "breakfast": ["대도회초밥", 35.2192141948918, 129.081791710508],
+                            "tourist_spots": [
+                                ["사라수변공원", 35.23820114135742, 129.20489501953125],
+                                ["동백방파제", 35.288211822509766, 129.2550048828125],
+                                ["일광해수욕장", 35.2600212097168, 129.23361206054688]
+                            ],
+                            "lunch": ["디레스토랑 부산송정점", 35.1754317318232, 129.196461833639],
+                            "dinner": ["감전인생술집", 35.1562930957189, 128.982539799551]
+                            }},
+                        "3": {{
+                            "breakfast": ["두툼연어", 35.1562045357109, 129.061599372169],
+                            "tourist_spots": [
+                                ["천마산전망대", 35.08916091918945, 129.01455688476562],
+                                ["병산저수지", 35.34368896484375, 129.17283630371094]
+                            ],
+                            "lunch": ["고베규카츠", 35.1546901639815, 129.06064344352],
+                            "dinner": ["파머스버거", 35.1015038640655, 129.031248439071]
+                            }}
+                    }}
                 }}
+                
         # Example usage
         result = generate_itinerary(hotels, tourist_spots, restaurants, days)
         return result
