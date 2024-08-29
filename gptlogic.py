@@ -641,9 +641,9 @@ def place_filtering(placename, state):
     query = """
             SELECT placetype, latitude, longitude
             FROM PLACE
-            WHERE placename = :placename
-          """
-    
+            WHERE placename = %(placename)s
+            """
+
     placename_info = pd.read_sql(query, engine, params={"placename": placename})
 
     # 기존장소 담기
@@ -653,33 +653,41 @@ def place_filtering(placename, state):
 
     extracted_names = []
 
-    if placetype == 0: #관광
+    if placetype == 0:  # 관광
         data = get_db('place')
         data = data[data['placename'] != placename]
 
-        for _, activities in state['schedule'].items():
+        # Ensure 'state['scheduler']' is a dictionary
+        if isinstance(state['scheduler'], str):
+            state['scheduler'] = json.loads(state['scheduler'])
+
+        for _, activities in state['scheduler'].items():
             if 'tourist_spots' in activities:
-                extracted_names.extend([spot['name'] for spot in activities['tourist_spots']])
-        
+                for spot in activities['tourist_spots']:
+                    if isinstance(spot, list) and len(spot) > 0:
+                        extracted_names.append(spot[0])  # Assuming name is the first element
+                    elif isinstance(spot, dict) and 'name' in spot:
+                        extracted_names.append(spot['name'])
+
         data = data[~data['placename'].isin(extracted_names)]
         user_age = int(state['user_age'])
         k = int(state['keywords']['days'])
         result = recommend_places(data, state['keywords'], user_age, k)
 
-    elif placetype == 1: #숙박
+    elif placetype == 1:  # 숙박
         data = get_db('hotel')
         data = data[data['placename'] != placename]
 
         for _, activities in state['schedule'].items():
             if 'hotel' in activities and activities['hotel'] and 'name' in activities['hotel']:
                 extracted_names.append(activities['hotel']['name'])
-        
+
         data = data[~data['placename'].isin(extracted_names)]
         user_age = int(state['user_age'])
         k = int(state['keywords']['days'])
         result = recommend_hotels(data, state['keywords'], user_age, k)
 
-    elif placetype == 2: #식당
+    elif placetype == 2:  # 식당
         data = get_db('food')
         data = data[data['placename'] != placename]
 
@@ -690,7 +698,7 @@ def place_filtering(placename, state):
                 extracted_names.append(activities['lunch']['name'])
             if 'dinner' in activities and 'name' in activities['dinner']:
                 extracted_names.append(activities['dinner']['name'])
-        
+
         data = data[~data['placename'].isin(extracted_names)]
         user_age = int(state['user_age'])
         k = int(state['keywords']['days'])
@@ -699,7 +707,7 @@ def place_filtering(placename, state):
     origin_place = (placename, placename_lat, placename_lon)
     return result, origin_place
 
-def update_place(placename, state):
+def update_place(state):
     model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
     prompt_1 = ChatPromptTemplate.from_messages([
         ("system", """
@@ -733,6 +741,8 @@ def update_place(placename, state):
         ("human", "{state}, {message}")
     ])
 
+    state['scheduler'] = json.loads(state['scheduler'])
+
     chain_1 = prompt_1 | model
     placename = chain_1.invoke({"state": state['scheduler'],
                            'message': state['message']}).content
@@ -761,6 +771,13 @@ def update_place(placename, state):
 
         Returns:
             list: "recommended_place": A List-formatted list with the name, latitude, and longitude of the selected location.
+            like {{recommend_place: {{[(name, latitude, longitude)]}}
+         
+        Return Example:
+         "recommended_place": {{
+         "name": "민락수변공원",
+         "latitude": 35.15591049194336,
+         "longitude": 129.1343536376953}}"
 
     # Example usage
     result = recommend_new_place(new_place, origin_place)
@@ -777,4 +794,14 @@ def update_place(placename, state):
     chain_2 = prompt_2 | model
     answer = chain_2.invoke({"new_place": new_place,
                            'origin_place': origin_place}).content
-    return answer
+    
+    # 파싱 전, 중간의 ```json```과 ```를 제거합니다.
+    json_start = answer.find('{')
+    json_end = answer.rfind('}')
+    json_data_str = answer[json_start:json_end + 1]
+
+    # JSON을 파싱합니다.
+    #itinerary_data = json.loads(json_data_str)
+
+    #answer = json.dumps(itinerary_data['recommend_place'], indent=4, ensure_ascii=False)
+    return json_data_str
