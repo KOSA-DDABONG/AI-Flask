@@ -94,11 +94,11 @@ def validate():
 def updating():
     data = request.json
 
-    state = data.get('state', '')
-    change_place = data.get('placename', '')
-    result_place = gptlogic.update_place(change_place, state)
-    return jsonify({'result': result_place})
-
+    state = data
+    #change_place = data.get('placename', '')
+    result_place = gptlogic.update_place(state)
+    response_json = json.dumps(result_place, ensure_ascii=False)  # UTF-8 인코딩
+    return Response(response_json, content_type="application/json; charset=utf-8")
 
 
 if __name__ == '__main__':
