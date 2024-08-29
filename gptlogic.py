@@ -592,11 +592,47 @@ def place_filtering(placename, state):
     return result, origin_place
 
 def update_place(placename, state):
+    model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
+    prompt_1 = ChatPromptTemplate.from_messages([
+        ("system", """
+    Your task is to identify which location in the provided schedule needs to be modified based on the user's message. The output should include the name of the location to be modified.
+
+    ====
+    def identify_location_to_modify(state: dict, message: str) -> str:
+        Identifies the location from the 'state' schedule that needs modification based on the 'message'. The identification should follow these guidelines:
+
+        - The 'state' is a dictionary containing information about the current schedule. Each location is represented as a dictionary with keys such as 'name', 'latitude', 'longitude', and 'details'.
+        - The 'message' is a string where the user specifies which location they want to modify. It may include the name of the location or other descriptive details.
+        - The function should parse the 'message' to match the most relevant location in the 'state' based on the name or description provided.
+        - The output should be a string containing the name of the identified location that matches the user's request.
+
+        Args:
+            state (dict): A dictionary containing the schedule with locations and their details.
+            message (str): A string specifying which location the user wants to modify.
+
+        Returns:
+            str: The name of the location identified for modification.
+
+    # Example usage
+    result = identify_location_to_modify(state, message)
+    return result
+
+    ====
+    # Response format
+    identify_location_to_modify({state}, "{message}")
+    ====
+    """),
+        ("human", "{state}, {message}")
+    ])
+
+    chain_1 = prompt_1 | model
+    placename = chain_1.invoke({"state": state['scheduler'],
+                           'message': state['message']}).content
+
+
     new_place, origin_place = place_filtering(placename, state)
 
-    model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
-
-    prompt = ChatPromptTemplate.from_messages([
+    prompt_2 = ChatPromptTemplate.from_messages([
         ("system", """
     Your task is to recommend a new location based on the proximity and relevance of the provided data. The output should include the reasoning behind the recommendation and the selected location in JSON format.
 
@@ -630,7 +666,7 @@ def update_place(placename, state):
         ("human", "{new_place}, {origin_place}")
     ])
 
-    chain = prompt | model
-    answer = chain.invoke({"new_place": new_place,
+    chain_2 = prompt_2 | model
+    answer = chain_2.invoke({"new_place": new_place,
                            'origin_place': origin_place}).content
     return answer
