@@ -383,11 +383,9 @@ def searching(state, whatwant):
         response = state['hotel_context'].append(response)
 
         return state
-
+'''
 def make_schedule(state):
-    model = anthropic.Anthropic(api_key=os.getenv("OPENAI_API_KEY"))
-    # Anthropoc 클라이언트 초기화
-    client = anthropic.Client(api_key=os.getenv("OPENAI_API_KEY"))
+    client = anthropic.Client(api_key=os.getenv("CLAUDE_API_KEY"))
     sys_prompt = """
                 Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
 
@@ -490,6 +488,116 @@ def make_schedule(state):
     state['explain'] = itinerary_data['reasoning']
     state['is_valid'] = 1
     return state
+'''
+def make_schedule(state):
+    model = ChatOpenAI(temperature=0.24, model="gpt-4o", api_key=os.getenv("OPENAI_API_KEY"))
+    prompt = ChatPromptTemplate.from_messages([
+        ("system", """
+        Your task is to generate a travel itinerary based on the provided data and specific requirements. The output should include both the reasoning behind the itinerary and a daily schedule in JSON format.
+
+        ====
+        def generate_itinerary(hotels: list, tourist_spots: list, restaurants: dict, days: int) -> dict:
+            Generates a travel itinerary for 'n' days using the provided data. The itinerary should be returned in JSON format and follow these guidelines:
+
+            - Each day's itinerary must include breakfast, lunch, and dinner, but the timing of meals should vary to simulate real-life travel flexibility.
+            - Tourist spots should be selected in a way that ensures a variety of experiences, avoiding repetition and ensuring a mix of cultural, natural, and historical sites.
+            - Each day can include 1 to 3 Tourist spots.
+            - Randomize the choice of hotels, ensuring that no more than 3 consecutive nights are spent in the same hotel, but not necessarily to choice new at every night.
+            - Ensure a logical flow of travel that minimizes unnecessary backtracking and maximizes time spent enjoying the locations(consider latitude and longitude).
+            - The itinerary should begin and end at a central location, but this location does not count as a tourist spot.
+            - The JSON output should use the day number as the key and include the itinerary for that day as the value.
+            - The last day should not include a hotel stay.
+            - Provide a detailed explanation of why the itinerary was planned in this way, considering factors such as travel convenience, variety, user preferences, and the optimal use of time.
+
+            Args:
+                hotels (list): A list of tuples, where each tuple contains the hotel name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
+                tourist_spots (list): A list of tuples, where each tuple contains the tourist spot name, latitude, and longitude (e.g., [(name, latitude, longitude), ...]).
+                restaurants (dict): A dictionary with keys '아침', '점심', '저녁', and values are lists of tuples containing the restaurant name, latitude, and longitude (e.g., {{'아침': [(name, latitude, longitude), ...], '점심': [...], '저녁': [...]}}).
+                days (int): The number of days for the itinerary.
+
+            Returns:
+                dict: A dictionary with two keys:
+                    1. "reasoning": A detailed explanation of the rationale behind the itinerary to korean.
+                    2. "itinerary": - A JSON-formatted dictionary representing the travel itinerary. Each day's itinerary should include locations for breakfast, lunch, dinner, and tourist spots, along with their respective names and coordinates.
+                                    - About Day key is not like 'Day 1' or 'day1'. just like '1'(Only Integer)
+
+            Result Example:
+                
+                {{
+                "reasoning": "A detailed explanation of the rationale behind the itinerary to korean.",
+                "itinerary":
+                    {{
+                        "1": {{
+                            "hotel": ["hotlename", 35.1513595581054, 129.06109619140625],
+                            "breakfast": ["rest_name", 35.2246055146469, 129.148646659037],
+                            "tourist_spots": [
+                                ["spots1_name", 35.01167297363281, 128.8254852294922],
+                                ["spots2_name", 35.169857025146484, 129.12281799316406]
+                            ],
+                            "lunch": ["lunch_name", 35.1551022324523, 129.145319493009],
+                            "dinner": ["dinn_name", 35.1844877012449, 129.121940951309]
+                            }},
+                        "2": {{
+                            "hotel": ["태림하우스", 35.11400604248047, 129.03668212890625],
+                            "breakfast": ["대도회초밥", 35.2192141948918, 129.081791710508],
+                            "tourist_spots": [
+                                ["사라수변공원", 35.23820114135742, 129.20489501953125],
+                                ["동백방파제", 35.288211822509766, 129.2550048828125],
+                                ["일광해수욕장", 35.2600212097168, 129.23361206054688]
+                            ],
+                            "lunch": ["디레스토랑 부산송정점", 35.1754317318232, 129.196461833639],
+                            "dinner": ["감전인생술집", 35.1562930957189, 128.982539799551]
+                            }},
+                        "3": {{
+                            "breakfast": ["두툼연어", 35.1562045357109, 129.061599372169],
+                            "tourist_spots": [
+                                ["천마산전망대", 35.08916091918945, 129.01455688476562],
+                                ["병산저수지", 35.34368896484375, 129.17283630371094]
+                            ],
+                            "lunch": ["고베규카츠", 35.1546901639815, 129.06064344352],
+                            "dinner": ["파머스버거", 35.1015038640655, 129.031248439071]
+                            }}
+                    }}
+                }}
+                
+        # Example usage
+        result = generate_itinerary(hotels, tourist_spots, restaurants, days)
+        return result
+
+        ====
+        # Response format
+        generate_itinerary({hotels}, {tourist_spots}, {restaurants}, {days})
+        ====
+        """),
+        ("human", "{hotels}, {tourist_spots}, {restaurants}, {days}")
+    ])
+
+    chain = prompt | model
+
+    # 올바른 변수명을 사용하여 chain을 실행합니다.
+    result = chain.invoke({
+        "hotels": state['hotel_context'],
+        "tourist_spots": state['playing_context'],
+        "restaurants": state['foods_context'],
+        "days": int(state['keywords']['days'])
+    })
+
+    schedule = result.content
+
+    # 파싱 전, 중간의 ```json```과 ```를 제거합니다.
+    json_start = schedule.find('{')
+    json_end = schedule.rfind('}')
+    json_data_str = schedule[json_start:json_end + 1]
+
+    # JSON을 파싱합니다.
+    itinerary_data = json.loads(json_data_str)
+
+    schedule = json.dumps(itinerary_data['itinerary'], indent=4, ensure_ascii=False)
+    state['scheduler'] = schedule
+    state['explain'] = itinerary_data['reasoning']
+    state['is_valid'] = 1
+    return state
+
 
 def validation(state):
     model = ChatOpenAI(temperature=0.3, model="gpt-4o-mini", api_key=os.getenv("OPENAI_API_KEY"))
