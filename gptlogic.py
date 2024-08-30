@@ -760,7 +760,7 @@ def update_place(state):
 
         - The 'origin_place' is a tuple containing the place name, latitude, and longitude (e.g., (name, latitude, longitude)).
         - The 'new_place' is a list or dictionary containing new potential locations. Each location is represented as a tuple with the name, latitude, and longitude.
-        - The recommendation should prioritize proximity to the 'origin_place', selecting the closest new location.
+        - The recommendation should prioritize proximity to the 'origin_place', selecting the most closest new location.
         - Consider diversity in types of locations (e.g., mixing cultural, natural, and historical sites) when possible.
         - If 'new_place' is a dictionary, consider different categories (e.g., 'tourist_spots', 'restaurants', 'hotels') and provide a balanced recommendation.
         - The JSON output should include the selected location's name and coordinates, along with the rationale behind the choice.
@@ -774,10 +774,7 @@ def update_place(state):
             like {{recommend_place: {{[(name, latitude, longitude)]}}
          
         Return Example:
-         "recommended_place": {{
-         "name": "민락수변공원",
-         "latitude": 35.15591049194336,
-         "longitude": 129.1343536376953}}"
+         "recommended_place": ["민락수변공원", 35.15591049194336, 129.1343536376953]"
 
     # Example usage
     result = recommend_new_place(new_place, origin_place)
